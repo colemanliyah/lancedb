@@ -44,7 +44,7 @@ import numpy as np
 
 from .common import DATA, VEC, VECTOR_COLUMN_NAME
 from .embeddings import EmbeddingFunctionConfig, EmbeddingFunctionRegistry
-from .index import BTree, IvfFlat, IvfPq, Bitmap, LabelList, HnswPq, HnswSq, FTS
+from .index import BTree, IvfFlat, IvfPq, Bitmap, LabelList, HnswPq, HnswSq, FTS, Cagra
 from .merge import LanceMergeInsertBuilder
 from .pydantic import LanceModel, model_to_dict
 from .query import (
@@ -1837,7 +1837,7 @@ class LanceTable(Table):
         index_cache_size: Optional[int] = None,
         num_bits: int = 8,
         index_type: Literal[
-            "IVF_FLAT", "IVF_PQ", "IVF_HNSW_SQ", "IVF_HNSW_PQ"
+            "IVF_FLAT", "IVF_PQ", "IVF_HNSW_SQ", "IVF_HNSW_PQ", "CAGRA"
         ] = "IVF_PQ",
         max_iterations: int = 50,
         sample_rate: int = 256,
@@ -1846,6 +1846,7 @@ class LanceTable(Table):
     ):
         """Create an index on the table."""
         if accelerator is not None:
+            print("accelerator none")
             # accelerator is only supported through pylance.
             self.to_lance().create_index(
                 column=vector_column_name,
@@ -1898,9 +1899,15 @@ class LanceTable(Table):
                 m=m,
                 ef_construction=ef_construction,
             )
+        elif index_type == "CAGRA":
+            print("cagra table.py")
+            config=Cagra(
+                cagra_build_algo = "nn_descent"
+            )
         else:
             raise ValueError(f"Unknown index type {index_type}")
-
+        
+        print("Marco")
         return LOOP.run(
             self._table.create_index(
                 vector_column_name,
@@ -3146,7 +3153,7 @@ class AsyncTable:
         *,
         replace: Optional[bool] = None,
         config: Optional[
-            Union[IvfFlat, IvfPq, HnswPq, HnswSq, BTree, Bitmap, LabelList, FTS]
+            Union[IvfFlat, IvfPq, HnswPq, HnswSq, BTree, Bitmap, LabelList, FTS, Cagra]
         ] = None,
         wait_timeout: Optional[timedelta] = None,
     ):
@@ -3176,15 +3183,20 @@ class AsyncTable:
         wait_timeout: timedelta, optional
             The timeout to wait if indexing is asynchronous.
         """
+        print("reached")
         if config is not None:
             if not isinstance(
-                config, (IvfFlat, IvfPq, HnswPq, HnswSq, BTree, Bitmap, LabelList, FTS)
+                config, (IvfFlat, IvfPq, HnswPq, HnswSq, BTree, Bitmap, LabelList, FTS, Cagra)
             ):
                 raise TypeError(
                     "config must be an instance of IvfPq, HnswPq, HnswSq, BTree,"
-                    " Bitmap, LabelList, or FTS"
+                    " Bitmap, LabelList, FTS, or Cagra"
                 )
         try:
+            print("Polo")
+            #print("INNER TYPE:", type(self._inner))
+            #print("HAS METHOD:", hasattr(self._inner, "create_index"))
+            #print(dir(self._inner))
             await self._inner.create_index(
                 column, index=config, replace=replace, wait_timeout=wait_timeout
             )
@@ -3637,10 +3649,8 @@ class AsyncTable:
             )
             if query.distance_type is not None:
                 async_query = async_query.distance_type(query.distance_type)
-            if query.minimum_nprobes is not None:
-                async_query = async_query.minimum_nprobes(query.minimum_nprobes)
-            if query.maximum_nprobes is not None:
-                async_query = async_query.maximum_nprobes(query.maximum_nprobes)
+            if query.nprobes is not None:
+                async_query = async_query.nprobes(query.nprobes)
             if query.refine_factor is not None:
                 async_query = async_query.refine_factor(query.refine_factor)
             if query.vector_column:

@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: Copyright The LanceDB Authors
 
 //! LanceDB Table APIs
-
 use arrow::array::{AsArray, FixedSizeListBuilder, Float32Builder};
 use arrow::datatypes::{Float32Type, UInt8Type};
 use arrow_array::{RecordBatchIterator, RecordBatchReader};
@@ -891,6 +890,7 @@ impl Table {
         index: Index,
         wait_timeout: Option<std::time::Duration>,
     ) -> IndexBuilder {
+        eprintln!("with timeour parameters");
         let mut builder = IndexBuilder::new(
             self.inner.clone(),
             columns
@@ -1990,6 +1990,37 @@ impl NativeTable {
         Ok(())
     }
 
+    async fn create_cagra_index(&self, field: &Field, replace: bool) -> Result<()> {
+        eprintln!("create index function I created");
+        if !supported_vector_data_type(field.data_type()) { // TODO: Come back and make proper supported vector dtype functions
+            return Err(Error::Schema {
+                message: format!(
+                    "Cagra index index cannot be created on the field `{}` which has data type {}",
+                    field.name(),
+                    field.data_type()
+                ),
+            });
+        }
+        eprintln!("before call to vector index params");
+        let mut dataset = self.dataset.get_mut().await?;
+        let lance_idx_params = lance::index::vector::VectorIndexParams::cagra(
+            "nn_descent".to_string()
+        ); 
+
+        eprintln!("before call to create index");
+        // how can i create a new builder.rs function in lance rust and point this there
+        dataset
+            .create_index(
+                &[field.name()],
+                IndexType::Vector,
+                None,
+                &lance_idx_params,
+                replace,
+            )
+            .await?;
+        Ok(())
+    }
+
     async fn generic_query(
         &self,
         query: &AnyQuery,
@@ -2221,6 +2252,9 @@ impl BaseTable for NativeTable {
                 self.create_ivf_hnsw_sq_index(ivf_hnsw_sq, field, opts.replace)
                     .await
             }
+            Index::Cagra(_) => {
+                self.create_cagra_index(field, opts.replace).await
+            }
         }
     }
 
@@ -2354,15 +2388,12 @@ impl BaseTable for NativeTable {
                     query.base.limit.unwrap_or(DEFAULT_TOP_K),
                 )?;
             }
-            scanner.minimum_nprobes(query.minimum_nprobes);
-            if let Some(maximum_nprobes) = query.maximum_nprobes {
-                scanner.maximum_nprobes(maximum_nprobes);
-            }
         }
         scanner.limit(
             query.base.limit.map(|limit| limit as i64),
             query.base.offset.map(|offset| offset as i64),
         )?;
+        scanner.nprobs(query.nprobes);
         if let Some(ef) = query.ef {
             scanner.ef(ef);
         }

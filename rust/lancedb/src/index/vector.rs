@@ -12,6 +12,8 @@ use lance::table::format::{Index, Manifest};
 
 use crate::DistanceType;
 
+use std::string::String;
+
 pub struct VectorIndex {
     pub columns: Vec<String>,
     pub index_name: String,
@@ -366,4 +368,22 @@ impl IvfHnswSqIndexBuilder {
     impl_distance_type_setter!();
     impl_ivf_params_setter!();
     impl_hnsw_params_setter!();
+}
+
+// Cagra
+#[derive(Debug, Clone)]
+pub struct CagraIndexBuilder {
+    pub cagra_build_algo: String,
+}
+
+impl Default for CagraIndexBuilder {
+    fn default() -> Self {
+        Self {
+            cagra_build_algo: "nn_descent".to_string(),
+        }
+    }
+}
+
+impl CagraIndexBuilder {
+
 }

@@ -570,6 +570,9 @@ class IvfPq:
     max_iterations: int = 50
     sample_rate: int = 256
 
+@dataclass
+class Cagra:
+    cagra_build_algo: str = "nn_descent"
 
 __all__ = [
     "BTree",
@@ -580,5 +583,6 @@ __all__ = [
     "IndexConfig",
     "FTS",
     "Bitmap",
+    "Cagra",
     "LabelList",
 ]

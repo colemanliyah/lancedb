@@ -7,12 +7,13 @@ use serde_with::skip_serializing_none;
 use std::sync::Arc;
 use std::time::Duration;
 use vector::IvfFlatIndexBuilder;
+use std::string::String;
 
 use crate::{table::BaseTable, DistanceType, Error, Result};
 
 use self::{
     scalar::{BTreeIndexBuilder, BitmapIndexBuilder, LabelListIndexBuilder},
-    vector::{IvfHnswPqIndexBuilder, IvfHnswSqIndexBuilder, IvfPqIndexBuilder},
+    vector::{IvfHnswPqIndexBuilder, IvfHnswSqIndexBuilder, IvfPqIndexBuilder, CagraIndexBuilder},
 };
 
 pub mod scalar;
@@ -60,6 +61,8 @@ pub enum Index {
     /// IVF-HNSW index with Scalar Quantization
     /// It is a variant of the HNSW algorithm that uses scalar quantization to compress the vectors.
     IvfHnswSq(IvfHnswSqIndexBuilder),
+
+    Cagra(CagraIndexBuilder)
 }
 
 /// Builder for the create_index operation
@@ -128,7 +131,7 @@ pub enum IndexType {
     LabelList,
     // FTS
     #[serde(alias = "INVERTED", alias = "Inverted")]
-    FTS,
+    FTS
 }
 
 impl std::fmt::Display for IndexType {

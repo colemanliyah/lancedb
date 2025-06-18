@@ -4,7 +4,7 @@
 use lancedb::index::vector::IvfFlatIndexBuilder;
 use lancedb::index::{
     scalar::{BTreeIndexBuilder, FtsIndexBuilder},
-    vector::{IvfHnswPqIndexBuilder, IvfHnswSqIndexBuilder, IvfPqIndexBuilder},
+    vector::{IvfHnswPqIndexBuilder, IvfHnswSqIndexBuilder, IvfPqIndexBuilder, CagraIndexBuilder},
     Index as LanceDbIndex,
 };
 use pyo3::types::PyStringMethods;
@@ -110,6 +110,14 @@ pub fn extract_index_params(source: &Option<Bound<'_, PyAny>>) -> PyResult<Lance
                 }
                 Ok(LanceDbIndex::IvfHnswSq(hnsw_sq_builder))
             },
+            "Cagra" => {
+                let params = source.extract::<CagraParams>()?;
+                let mut cagra_builder = CagraIndexBuilder::default();
+                if let Some(cagra_build_algo) = params.cagra_build_algo{
+                    cagra_builder.cagra_build_algo = cagra_build_algo;
+                }
+                Ok(LanceDbIndex::Cagra(cagra_builder))
+            }
             not_supported => Err(PyValueError::new_err(format!(
                 "Invalid index type '{}'.  Must be one of BTree, Bitmap, LabelList, FTS, IvfPq, IvfHnswPq, or IvfHnswSq",
                 not_supported
@@ -170,6 +178,11 @@ struct IvfHnswSqParams {
     sample_rate: u32,
     m: u32,
     ef_construction: u32,
+}
+
+#[derive(FromPyObject)]
+struct CagraParams {
+    cagra_build_algo: Option<String>,
 }
 
 #[pyclass(get_all)]
