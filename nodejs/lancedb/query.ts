@@ -816,7 +816,6 @@ export enum Operator {
 export enum Occur {
   Must = "MUST",
   Should = "SHOULD",
-  MustNot = "MUST NOT"
 }
 
 /**
