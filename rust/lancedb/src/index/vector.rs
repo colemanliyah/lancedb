@@ -373,13 +373,19 @@ impl IvfHnswSqIndexBuilder {
 // Cagra
 #[derive(Debug, Clone)]
 pub struct CagraIndexBuilder {
-    pub cagra_build_algo: String,
+    pub cagra_metric: Option<String>,
+    pub cagra_intermediate_graph_degree: Option<u32>,
+    pub cagra_graph_degree: Option<u32>,
+    pub cagra_build_algo: Option<String>,
 }
 
 impl Default for CagraIndexBuilder {
     fn default() -> Self {
         Self {
-            cagra_build_algo: "nn_descent".to_string(),
+            cagra_metric: Some("sqeuclidean".to_string()),
+            cagra_intermediate_graph_degree: Some(128),
+            cagra_graph_degree: Some(64),
+            cagra_build_algo: Some("ivf_pq".to_string()),
         }
     }
 }

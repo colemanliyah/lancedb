@@ -53,7 +53,7 @@ use crate::error::{Error, Result};
 use crate::index::scalar::FtsIndexBuilder;
 use crate::index::vector::{
     suggested_num_partitions_for_hnsw, IvfFlatIndexBuilder, IvfHnswPqIndexBuilder,
-    IvfHnswSqIndexBuilder, IvfPqIndexBuilder, VectorIndex,
+    IvfHnswSqIndexBuilder, IvfPqIndexBuilder, VectorIndex, CagraIndexBuilder
 };
 use crate::index::IndexStatistics;
 use crate::index::{
@@ -1991,7 +1991,7 @@ impl NativeTable {
         Ok(())
     }
 
-    async fn create_cagra_index(&self, field: &Field, replace: bool) -> Result<()> {
+    async fn create_cagra_index(&self, index:CagraIndexBuilder, field: &Field, replace: bool) -> Result<()> {
         eprintln!("create index function I created");
         if !supported_vector_data_type(field.data_type()) { // TODO: Come back and make proper supported vector dtype functions
             return Err(Error::Schema {
@@ -2001,11 +2001,42 @@ impl NativeTable {
                     field.data_type()
                 ),
             });
-        }
+        }      
+        
         eprintln!("before call to vector index params");
         let mut dataset = self.dataset.get_mut().await?;
+
+        let metric: String = if let Some(m) = index.cagra_metric {
+            m
+        } else {
+            "sqeuclidean".to_string()
+        };
+        let intermediate_graph_degree: u32 = if let Some(igd) = index.cagra_intermediate_graph_degree {
+            igd
+        } else {
+            128
+        };
+        let graph_degree: u32 = if let Some(gd) = index.cagra_graph_degree {
+            gd
+        } else {
+            64
+        };
+        let build_aglo: String = if let Some(a) = index.cagra_build_algo {
+            a
+        } else {
+            "ivf_pq".to_string()
+        };
+
+        //let metric = index.cagra_metric.unwrap_or_else(|| "sqeuclidean".to_string());
+        // let intermediate_graph_degree = index.cagra_intermediate_graph_degree.unwrap_or(64);
+        // let graph_degree = index.cagra_graph_degree.unwrap_or(32);
+        // let build_aglo = index.cagra_build_algo.unwrap_or_else(|| "ivf_pq".to_string());
+
         let lance_idx_params = lance::index::vector::VectorIndexParams::cagra(
-            "nn_descent".to_string()
+            metric,
+            intermediate_graph_degree,
+            graph_degree,
+            build_aglo
         ); 
 
         eprintln!("before call to create index");
@@ -2253,8 +2284,8 @@ impl BaseTable for NativeTable {
                 self.create_ivf_hnsw_sq_index(ivf_hnsw_sq, field, opts.replace)
                     .await
             }
-            Index::Cagra(_) => {
-                self.create_cagra_index(field, opts.replace).await
+            Index::Cagra(cagra) => {
+                self.create_cagra_index(cagra, field, opts.replace).await
             }
         }
     }

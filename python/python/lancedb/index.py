@@ -572,7 +572,10 @@ class IvfPq:
 
 @dataclass
 class Cagra:
-    cagra_build_algo: str = "nn_descent"
+    cagra_metric: str = "sqeuclidean"
+    cagra_intermediate_graph_degree: int = 128,
+    cagra_graph_degree: int = 64,
+    cagra_build_algo: str = "ivf_pq"
 
 __all__ = [
     "BTree",

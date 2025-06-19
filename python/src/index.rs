@@ -113,8 +113,17 @@ pub fn extract_index_params(source: &Option<Bound<'_, PyAny>>) -> PyResult<Lance
             "Cagra" => {
                 let params = source.extract::<CagraParams>()?;
                 let mut cagra_builder = CagraIndexBuilder::default();
+                if let Some(cagra_metric) = params.cagra_metric{
+                    cagra_builder.cagra_metric = Some(cagra_metric);
+                }
+                if let Some(cagra_intermediate_graph_degree) = params.cagra_intermediate_graph_degree{
+                    cagra_builder.cagra_intermediate_graph_degree = Some(cagra_intermediate_graph_degree);
+                }
+                if let Some(cagra_graph_degree) = params.cagra_graph_degree{
+                    cagra_builder.cagra_graph_degree = Some(cagra_graph_degree);
+                }
                 if let Some(cagra_build_algo) = params.cagra_build_algo{
-                    cagra_builder.cagra_build_algo = cagra_build_algo;
+                    cagra_builder.cagra_build_algo = Some(cagra_build_algo);
                 }
                 Ok(LanceDbIndex::Cagra(cagra_builder))
             }
@@ -182,7 +191,10 @@ struct IvfHnswSqParams {
 
 #[derive(FromPyObject)]
 struct CagraParams {
-    cagra_build_algo: Option<String>,
+    pub cagra_metric: Option<String>,
+    pub cagra_intermediate_graph_degree: Option<u32>,
+    pub cagra_graph_degree: Option<u32>,
+    pub cagra_build_algo: Option<String>,
 }
 
 #[pyclass(get_all)]

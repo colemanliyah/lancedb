@@ -1843,6 +1843,10 @@ class LanceTable(Table):
         sample_rate: int = 256,
         m: int = 20,
         ef_construction: int = 300,
+        cagra_metric: str = 'sqeuclidean',
+        cagra_intermediate_graph_degree: int = 128,
+        cagra_graph_degree: int = 64,
+        cagra_build_algo: str = 'ivf_pq',
     ):
         """Create an index on the table."""
         if accelerator is not None:
@@ -1902,7 +1906,10 @@ class LanceTable(Table):
         elif index_type == "CAGRA":
             print("cagra table.py")
             config=Cagra(
-                cagra_build_algo = "nn_descent"
+                cagra_metric=cagra_metric,
+                cagra_intermediate_graph_degree=cagra_intermediate_graph_degree,
+                cagra_graph_degree=cagra_graph_degree,
+                cagra_build_algo=cagra_build_algo,
             )
         else:
             raise ValueError(f"Unknown index type {index_type}")
