@@ -2045,7 +2045,7 @@ impl NativeTable {
         dataset
             .create_index(
                 &[field.name()],
-                IndexType::Cagra,
+                IndexType::Vector,
                 None,
                 &lance_idx_params,
                 replace,
