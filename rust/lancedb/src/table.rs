@@ -1451,6 +1451,7 @@ impl NativeTable {
             None => params,
         };
 
+        eprintln!("before jump");
         let dataset = DatasetBuilder::from_uri(uri)
             .with_read_params(params)
             .load()
@@ -2044,7 +2045,7 @@ impl NativeTable {
         dataset
             .create_index(
                 &[field.name()],
-                IndexType::Vector,
+                IndexType::Cagra,
                 None,
                 &lance_idx_params,
                 replace,
