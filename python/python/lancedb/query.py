@@ -58,6 +58,9 @@ if TYPE_CHECKING:
     else:
         from typing_extensions import Self
 
+import cupy as cp
+from cuvs.neighbors import cagra
+import pyarrow.dataset as ds
 
 # Pydantic validation function for vector queries
 def ensure_vector_query(
@@ -526,6 +529,7 @@ class LanceQueryBuilder(ABC):
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
         fast_search: bool = None,
+        cagra_path: str = ""
     ) -> Self:
         """
         Create a query builder based on the given query and query type.
@@ -586,7 +590,7 @@ class LanceQueryBuilder(ABC):
             raise TypeError(f"Unsupported query type: {type(query)}")
 
         return LanceVectorQueryBuilder(
-            table, query, vector_column_name, str_query, fast_search
+            table, query, vector_column_name, str_query, fast_search, cagra_path=cagra_path
         )
 
     @classmethod
@@ -682,7 +686,20 @@ class LanceQueryBuilder(ABC):
             If None, wait indefinitely.
         """
         tbl = flatten_columns(self.to_arrow(timeout=timeout), flatten)
-        return tbl.to_pandas()
+        df = tbl.to_pandas()
+
+        if 'cagra_marker' in list(df.columns):
+            d,n = self.cagra_search()
+            return pd.DataFrame({
+                "ids": n[0],
+                "distances": d[0]
+            })
+            
+        return df
+
+    @abstractmethod
+    def cagra_search(self):
+        raise NotImplementedError
 
     @abstractmethod
     def to_arrow(self, *, timeout: Optional[timedelta] = None) -> pa.Table:
@@ -1044,6 +1061,7 @@ class LanceVectorQueryBuilder(LanceQueryBuilder):
         vector_column: str,
         str_query: Optional[str] = None,
         fast_search: bool = None,
+        cagra_path: str = ""
     ):
         super().__init__(table)
         self._query = query
@@ -1058,6 +1076,7 @@ class LanceVectorQueryBuilder(LanceQueryBuilder):
         self._reranker = None
         self._str_query = str_query
         self._fast_search = fast_search
+        self._cagra_path = cagra_path
 
     def metric(self, metric: Literal["l2", "cosine", "dot"]) -> LanceVectorQueryBuilder:
         """Set the distance metric to use.
@@ -1301,6 +1320,14 @@ class LanceVectorQueryBuilder(LanceQueryBuilder):
         result_set = self._table._execute_query(
             query, batch_size=batch_size, timeout=timeout
         )
+
+        batch_cols = list(result_set.read_all().to_pandas().columns)
+        if 'cagra_marker' in batch_cols:
+            print("yep")
+            schema = pa.schema([("cagra_marker", pa.string())])
+            batch = pa.record_batch([pa.array(["cagra"])], schema=schema)
+            return pa.RecordBatchReader.from_batches(schema, [batch])
+
         if self._reranker is not None:
             rs_table = result_set.read_all()
             result_set = self._reranker.rerank_vector(self._str_query, rs_table)
@@ -1311,6 +1338,28 @@ class LanceVectorQueryBuilder(LanceQueryBuilder):
             )
 
         return result_set
+
+    def cagra_search(self) -> tuple[list, list]:
+        cp_queries = [cp.array(q, dtype=cp.float32) for q in self._query]
+        q = cp.array(cp_queries)
+
+        if q.ndim == 1:
+            q = q[cp.newaxis, :] 
+
+        if self._cagra_path == "":
+            raise ValueError("No cagra path specified")
+
+        index = cagra.load(self._cagra_path)
+        search_params = cagra.SearchParams(max_queries=0, itopk_size=3840)
+
+        try:
+            # TODO: Don't HardCode K, try to use limit function
+            d, n = cagra.search(search_params, index, q, 384)
+            return d.copy_to_host().tolist(), n.copy_to_host().tolist()
+
+        except Exception as e:
+            print("Error in python: ", e)
+
 
     def where(self, where: str, prefilter: bool = None) -> LanceVectorQueryBuilder:
         """Set the where clause.

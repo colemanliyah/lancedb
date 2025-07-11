@@ -1007,6 +1007,7 @@ class Table(ABC):
         query_type: QueryType = "auto",
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = ""
     ) -> LanceQueryBuilder:
         """Create a search query to find the nearest neighbors
         of the given query vector. We currently support [vector search][search]
@@ -2242,6 +2243,7 @@ class LanceTable(Table):
         query_type: Literal["vector"] = "vector",
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = ""
     ) -> LanceVectorQueryBuilder: ...
 
     @overload
@@ -2252,6 +2254,7 @@ class LanceTable(Table):
         query_type: Literal["fts"] = "fts",
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = ""
     ) -> LanceFtsQueryBuilder: ...
 
     @overload
@@ -2264,6 +2267,7 @@ class LanceTable(Table):
         query_type: Literal["hybrid"] = "hybrid",
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = "",
     ) -> LanceHybridQueryBuilder: ...
 
     @overload
@@ -2274,6 +2278,7 @@ class LanceTable(Table):
         query_type: QueryType = "auto",
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = ""
     ) -> LanceEmptyQueryBuilder: ...
 
     def search(
@@ -2285,6 +2290,7 @@ class LanceTable(Table):
         query_type: QueryType = "auto",
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = ""
     ) -> LanceQueryBuilder:
         """Create a search query to find the nearest neighbors
         of the given query vector. We currently support [vector search][search]
@@ -2368,6 +2374,7 @@ class LanceTable(Table):
             vector_column_name=vector_column_name,
             ordering_field_name=ordering_field_name,
             fts_columns=fts_columns or [],
+            cagra_path=cagra_path
         )
 
     @classmethod
@@ -3392,6 +3399,7 @@ class AsyncTable:
         query_type: Literal["auto"] = ...,
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = ""
     ) -> Union[AsyncHybridQuery, AsyncFTSQuery, AsyncVectorQuery]: ...
 
     @overload
@@ -3402,6 +3410,7 @@ class AsyncTable:
         query_type: Literal["hybrid"] = ...,
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = ""
     ) -> AsyncHybridQuery: ...
 
     @overload
@@ -3412,6 +3421,7 @@ class AsyncTable:
         query_type: Literal["auto"] = ...,
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = ""
     ) -> AsyncVectorQuery: ...
 
     @overload
@@ -3422,6 +3432,7 @@ class AsyncTable:
         query_type: Literal["fts"] = ...,
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = ""
     ) -> AsyncFTSQuery: ...
 
     @overload
@@ -3434,6 +3445,7 @@ class AsyncTable:
         query_type: Literal["vector"] = ...,
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = ""
     ) -> AsyncVectorQuery: ...
 
     async def search(
@@ -3445,6 +3457,7 @@ class AsyncTable:
         query_type: QueryType = "auto",
         ordering_field_name: Optional[str] = None,
         fts_columns: Optional[Union[str, List[str]]] = None,
+        cagra_path: str = ""
     ) -> Union[AsyncHybridQuery, AsyncFTSQuery, AsyncVectorQuery]:
         """Create a search query to find the nearest neighbors
         of the given query vector. We currently support [vector search][search]
@@ -3492,7 +3505,6 @@ class AsyncTable:
         LanceQueryBuilder
             A query builder object representing the query.
         """
-
         def is_embedding(query):
             return isinstance(query, (list, np.ndarray, pa.Array, pa.ChunkedArray))
 
