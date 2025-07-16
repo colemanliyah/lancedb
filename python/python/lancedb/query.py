@@ -1347,10 +1347,7 @@ class LanceVectorQueryBuilder(LanceQueryBuilder):
         # with open("/workspace/ids_test.pkl", 'rb') as file:
         with open("/workspace/cagra_ids.pkl", 'rb') as file:
             ids = pickle.load(file)
-    
-        print("AHSIDFHOWAIEHF")
-        print(type(ids))
-        print(type(ids[0]))
+
         q = cp.array(self._query, dtype=cp.float32)
 
         if self._cagra_path == "":
