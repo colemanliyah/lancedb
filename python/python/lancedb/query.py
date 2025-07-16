@@ -26,6 +26,7 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.fs as pa_fs
 import pydantic
+import pickle
 
 from lancedb.pydantic import PYDANTIC_VERSION
 
@@ -691,8 +692,8 @@ class LanceQueryBuilder(ABC):
         if 'cagra_marker' in list(df.columns):
             d,n = self.cagra_search()
             return pd.DataFrame({
-                "ids": n[0],
-                "distances": d[0]
+                "ids": n,
+                "distances": d
             })
             
         return df
@@ -1314,6 +1315,7 @@ class LanceVectorQueryBuilder(LanceQueryBuilder):
         pa.RecordBatchReader
         """
         vector = self._query if isinstance(self._query, list) else self._query.tolist()
+        print(len(vector))
         if isinstance(vector[0], np.ndarray):
             vector = [v.tolist() for v in vector]
         query = self.to_query_object()
@@ -1322,8 +1324,8 @@ class LanceVectorQueryBuilder(LanceQueryBuilder):
         )
 
         batch_cols = list(result_set.read_all().to_pandas().columns)
+
         if 'cagra_marker' in batch_cols:
-            print("yep")
             schema = pa.schema([("cagra_marker", pa.string())])
             batch = pa.record_batch([pa.array(["cagra"])], schema=schema)
             return pa.RecordBatchReader.from_batches(schema, [batch])
@@ -1340,22 +1342,34 @@ class LanceVectorQueryBuilder(LanceQueryBuilder):
         return result_set
 
     def cagra_search(self) -> tuple[list, list]:
-        cp_queries = [cp.array(q, dtype=cp.float32) for q in self._query]
-        q = cp.array(cp_queries)
-
-        if q.ndim == 1:
-            q = q[cp.newaxis, :] 
+        ids = []
+        # TODO: Remove this from being hard coded
+        # with open("/workspace/ids_test.pkl", 'rb') as file:
+        with open("/workspace/cagra_ids.pkl", 'rb') as file:
+            ids = pickle.load(file)
+    
+        print("AHSIDFHOWAIEHF")
+        print(type(ids))
+        print(type(ids[0]))
+        q = cp.array(self._query, dtype=cp.float32)
 
         if self._cagra_path == "":
             raise ValueError("No cagra path specified")
 
         index = cagra.load(self._cagra_path)
-        search_params = cagra.SearchParams(max_queries=0, itopk_size=3840)
+        search_params = cagra.SearchParams(max_queries=0, itopk_size=384)
 
         try:
             # TODO: Don't HardCode K, try to use limit function
             d, n = cagra.search(search_params, index, q, 384)
-            return d.copy_to_host().tolist(), n.copy_to_host().tolist()
+
+            neighbors = n.copy_to_host().tolist()
+            predicted_neighbors = []
+            for neighbor in neighbors:
+                neighborhood = [ids[int(n)] for n in neighbor]
+                predicted_neighbors.append(neighborhood)
+
+            return d.copy_to_host().tolist(), predicted_neighbors
 
         except Exception as e:
             print("Error in python: ", e)
