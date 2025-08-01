@@ -891,7 +891,6 @@ impl Table {
         index: Index,
         wait_timeout: Option<std::time::Duration>,
     ) -> IndexBuilder {
-        eprintln!("with timeour parameters");
         let mut builder = IndexBuilder::new(
             self.inner.clone(),
             columns
@@ -1451,7 +1450,6 @@ impl NativeTable {
             None => params,
         };
 
-        eprintln!("before jump");
         let dataset = DatasetBuilder::from_uri(uri)
             .with_read_params(params)
             .load()
@@ -2040,7 +2038,6 @@ impl NativeTable {
             build_aglo
         ); 
 
-        eprintln!("before call to create index");
         // how can i create a new builder.rs function in lance rust and point this there
         dataset
             .create_index(

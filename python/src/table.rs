@@ -349,7 +349,6 @@ impl Table {
         replace: Option<bool>,
         wait_timeout: Option<Bound<'_, PyAny>>,
     ) -> PyResult<Bound<'a, PyAny>> {
-        eprintln!("*** RUST create_index CALLED ***");
         let index = extract_index_params(&index)?;
         let timeout = wait_timeout.map(|t| t.extract::<std::time::Duration>().unwrap());
         let mut op = self_

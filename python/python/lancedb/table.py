@@ -1851,7 +1851,6 @@ class LanceTable(Table):
     ):
         """Create an index on the table."""
         if accelerator is not None:
-            print("accelerator none")
             # accelerator is only supported through pylance.
             self.to_lance().create_index(
                 column=vector_column_name,
@@ -1915,7 +1914,6 @@ class LanceTable(Table):
         else:
             raise ValueError(f"Unknown index type {index_type}")
         
-        print("Marco")
         return LOOP.run(
             self._table.create_index(
                 vector_column_name,
@@ -3197,7 +3195,6 @@ class AsyncTable:
         wait_timeout: timedelta, optional
             The timeout to wait if indexing is asynchronous.
         """
-        print("reached")
         if config is not None:
             if not isinstance(
                 config, (IvfFlat, IvfPq, HnswPq, HnswSq, BTree, Bitmap, LabelList, FTS, Cagra)
@@ -3207,7 +3204,6 @@ class AsyncTable:
                     " Bitmap, LabelList, FTS, or Cagra"
                 )
         try:
-            print("Polo")
             #print("INNER TYPE:", type(self._inner))
             #print("HAS METHOD:", hasattr(self._inner, "create_index"))
             #print(dir(self._inner))

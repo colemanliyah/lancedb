@@ -1315,7 +1315,6 @@ class LanceVectorQueryBuilder(LanceQueryBuilder):
         pa.RecordBatchReader
         """
         vector = self._query if isinstance(self._query, list) else self._query.tolist()
-        print(len(vector))
         if isinstance(vector[0], np.ndarray):
             vector = [v.tolist() for v in vector]
         query = self.to_query_object()
